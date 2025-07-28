@@ -4,53 +4,42 @@ on:
   # Push to master will deploy a beta version
   push:
     branches:
-      - master
+      - release/*
   # A release via GitHub releases will deploy a latest version
   release:
-    types: [ published ]
+    types: [published]
 
 jobs:
-  # NPM install is done in a separate job and cached to speed up the following jobs.
   build_and_test:
     name: Build & Test
-    if: ${{ !contains(github.event.head_commit.message, '[skip ci]') }}
     runs-on: ${{ matrix.os }}
 
     strategy:
       matrix:
-        os: [ubuntu-22.04] # add windows-latest later
+        os: [ubuntu-22.04]
         node-version: [14, 16, 18]
 
     steps:
-      -
-        uses: actions/checkout@v2
-      -
-        name: Use Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v1
+      - uses: actions/checkout@v4
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v3
         with:
           node-version: ${{ matrix.node-version }}
-      -
-        name: Cache Node Modules
+      - name: Cache Node Modules
         if: ${{ matrix.node-version == 18 }}
         uses: actions/cache@v4
         with:
           path: |
             node_modules
-            build
-          key: cache-${{ github.run_id }}-v18
-      -
-        name: Install Dependencies
+            dist
+          key: cache-release-${{ github.ref }}-${{ github.run_id }}
+      - name: Install Dependencies
         run: npm install
-      -   name: Add localhost-test to Linux hosts file
-          if: ${{ matrix.os == 'ubuntu-22.04' }}
-          run: sudo echo "127.0.0.1 localhost-test" | sudo tee -a /etc/hosts
-#     -
-#         name: Add localhost-test to Windows hosts file
-#         if: ${{ matrix.os == 'windows-latest' }}
-#         run: echo "`n127.0.0.1 localhost-test">>C:\Windows\System32\drivers\etc\hosts
-      -
-        name: Run Tests
+      - name: Run Tests
         run: npm test
+      - name: Build
+        if: ${{ matrix.node-version == 18 }}
+        run: npm run build
 
   lint:
     name: Lint
@@ -58,64 +47,56 @@ jobs:
     runs-on: ubuntu-22.04
 
     steps:
-      -
-        uses: actions/checkout@v2
-      -
-        name: Use Node.js 18
-        uses: actions/setup-node@v1
+      - uses: actions/checkout@v4
+      - name: Use Node.js 18
+        uses: actions/setup-node@v3
         with:
           node-version: 18
-      -
-        name: Load Cache
+      - name: Load Cache
         uses: actions/cache@v4
         with:
           path: |
             node_modules
-            build
-          key: cache-${{ github.run_id }}-v18
-      -
-        run: npm run lint
+            dist
+          key: cache-release-${{ github.ref }}-${{ github.run_id }}
+      - run: npm run lint
 
-
-  # The deploy job is long but there are only 2 important parts. NPM publish
-  # and triggering of docker image builds in the apify-actor-docker repo.
-  deploy:
-    name: Publish to NPM
+  release:
+    name: Create GitHub Release
     needs: [lint]
     runs-on: ubuntu-22.04
     steps:
-      -
-        uses: actions/checkout@v2
-      -
-        uses: actions/setup-node@v1
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v3
         with:
           node-version: 18
-          registry-url: https://registry.npmjs.org/
-      -
-        name: Load Cache
+      - name: Load Cache
         uses: actions/cache@v4
         with:
           path: |
             node_modules
-            build
-          key: cache-${{ github.run_id }}-v18
-      -
-        # Determine if this is a beta or latest release
-        name: Set Release Tag
-        run: echo "RELEASE_TAG=$(if [ ${{ github.event_name }} = release ]; then echo latest; else echo beta; fi)" >> $GITHUB_ENV
-      -
-        # Check version consistency and increment pre-release version number for beta only.
-        name: Bump pre-release version
-        if: env.RELEASE_TAG == 'beta'
-        run: node ./.github/scripts/before-beta-release.js
-      -
-        name: Publish to NPM
-        run: NODE_AUTH_TOKEN=${{secrets.NPM_TOKEN}} npm publish --tag ${{ env.RELEASE_TAG }} --access public
-      -
-        # Latest version is tagged by the release process so we only tag beta here.
-        name: Tag Version
-        if: env.RELEASE_TAG == 'beta'
-        run: |
-          git_tag=v`node -p "require('./package.json').version"`
-          git tag $git_tag
-          git push origin $git_tag
+            dist
+          key: cache-release-${{ github.ref }}-${{ github.run_id }}
+      - name: Create Release Asset
+        run: tar -czf release.tgz dist
+      - name: Create GitHub Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          body: |
+            See [CHANGELOG.md](CHANGELOG.md) for details.
+          draft: false
+          prerelease: false
+      - name: Upload Release Asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./release.tgz
+          asset_name: release.tgz
+          asset_content_type: application/gzip
