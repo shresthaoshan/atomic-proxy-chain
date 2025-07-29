@@ -1,10 +1,10 @@
 name: Check & Release
 
 on:
-  # Push to master will deploy a beta version
+  # Push to a tag will create a release
   push:
-    branches:
-      - release/*
+    tags:
+      - 'v*'
   # A release via GitHub releases will deploy a latest version
   release:
     types: [published]
