@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 const { createTunnel, closeTunnel, redactUrl } = require('proxy-chain');
 
 // This example demonstrates how to create a tunnel via Apify's HTTP proxy service.

@@ -38,6 +38,7 @@ interface ChainOpts {
     handlerOpts: HandlerOpts;
     server: EventEmitter & {
         log: (connectionId: unknown, str: string) => void,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         emit: (event: string, ...args: any[]) => boolean,
     };
     isPlain: boolean;

@@ -17,11 +17,13 @@ export interface HandlerOpts {
 }
 
 interface DirectOpts {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     request: { url?: string, [key: string]: any };
     sourceSocket: Socket;
     head: Buffer;
     server: EventEmitter & {
         log: (connectionId: unknown, str:string) => void,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         emit: (event: string, ...args: any[]) => boolean,
     };
     handlerOpts: HandlerOpts;
