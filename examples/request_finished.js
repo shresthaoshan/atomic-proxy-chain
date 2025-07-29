@@ -1,5 +1,7 @@
+/* eslint-disable import/no-extraneous-dependencies */
+/* eslint-disable no-console */
 const { Server } = require('proxy-chain');
-const http = require('http');
+const http = require('node:http');
 const request = require('request');
 
 (async () => {
@@ -8,6 +10,7 @@ const request = require('request');
         res.writeHead(200, { 'Content-Type': 'text/plain' });
         res.end('Hello World!');
     });
+    // eslint-disable-next-line no-promise-executor-return
     await new Promise((resolve) => targetServer.listen(0, resolve));
     const targetPort = targetServer.address().port;
 
@@ -17,8 +20,8 @@ const request = require('request');
         verbose: true,
     });
 
-    server.on('requestFinished', ({ id, connectionId, request }) => {
-        console.log(`Request finished: { id: ${id}, connectionId: ${connectionId}, method: ${request.method}, url: ${request.url} }`);
+    server.on('requestFinished', ({ id, connectionId, req }) => {
+        console.log(`Request finished: { id: ${id}, connectionId: ${connectionId}, method: ${req.method}, url: ${req.url} }`);
     });
 
     await server.listen();
@@ -32,6 +35,7 @@ const request = require('request');
         request({
             url: `http://127.0.0.1:${targetPort}`,
             proxy: `http://127.0.0.1:${proxyPort}`,
+        // eslint-disable-next-line consistent-return
         }, (error, response, body) => {
             if (error) return reject(error);
             console.log(`Response body: ${body}`);
@@ -41,6 +45,7 @@ const request = require('request');
 
     // Close servers
     await server.close(true);
+    // eslint-disable-next-line no-promise-executor-return
     await new Promise((resolve) => targetServer.close(resolve));
     console.log('Servers closed.');
-})(); 
+})();

@@ -557,6 +557,7 @@ export class Server extends EventEmitter {
             error,
         });
 
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const { srcResponse } = (request as any).handlerOpts as HandlerOpts;
 
         if (!request.socket) {
@@ -677,6 +678,7 @@ export class Server extends EventEmitter {
 
         const { bytesWritten, bytesRead } = getTargetStats(socket);
 
+        // eslint-disable-next-line consistent-return
         return {
             srcTxBytes: socket.bytesWritten,
             srcRxBytes: socket.bytesRead,

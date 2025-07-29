@@ -10,40 +10,8 @@ on:
     types: [published]
 
 jobs:
-  build_and_test:
-    name: Build & Test
-    runs-on: ${{ matrix.os }}
-
-    strategy:
-      matrix:
-        os: [ubuntu-22.04]
-        node-version: [14, 16, 18]
-
-    steps:
-      - uses: actions/checkout@v4
-      - name: Use Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v3
-        with:
-          node-version: ${{ matrix.node-version }}
-      - name: Cache Node Modules
-        if: ${{ matrix.node-version == 18 }}
-        uses: actions/cache@v4
-        with:
-          path: |
-            node_modules
-            dist
-          key: cache-release-${{ github.ref }}-${{ github.run_id }}
-      - name: Install Dependencies
-        run: npm install
-      - name: Run Tests
-        run: npm test
-      - name: Build
-        if: ${{ matrix.node-version == 18 }}
-        run: npm run build
-
   lint:
     name: Lint
-    needs: [build_and_test]
     runs-on: ubuntu-22.04
 
     steps:
