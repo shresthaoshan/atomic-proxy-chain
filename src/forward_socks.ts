@@ -47,9 +47,14 @@ export const forwardSocks = async (
         agent,
     };
 
+    const commonOpts: http.ClientRequestArgs = {
+        ...options,
+        timeout: 200_000, // 200 seconds
+    };
+
     // Only handling "http" here - since everything else is handeled by tunnelSocks.
     // We have to force cast `options` because @types/node doesn't support an array.
-    const client = http.request(request.url!, options as unknown as http.ClientRequestArgs, async (clientResponse) => {
+    const client = http.request(request.url!, commonOpts, async (clientResponse) => {
         try {
             // This is necessary to prevent Node.js throwing an error
             let statusCode = clientResponse.statusCode!;

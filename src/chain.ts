@@ -89,12 +89,17 @@ export const chain = (
         options.headers['proxy-authorization'] = getBasicAuthorizationHeader(proxy);
     }
 
+    const commonOpts = {
+        ...options,
+        timeout: 200_000, // 200 seconds
+    };
+
     const client = proxy.protocol === 'https:'
         ? https.request(proxy.origin, {
-            ...options,
+            ...commonOpts,
             rejectUnauthorized: !handlerOpts.ignoreUpstreamProxyCertificate,
         })
-        : http.request(proxy.origin, options);
+        : http.request(proxy.origin, commonOpts);
 
     client.once('socket', (targetSocket: SocketWithPreviousStats) => {
         // Socket can be re-used by multiple requests.
