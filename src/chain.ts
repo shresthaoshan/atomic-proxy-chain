@@ -137,7 +137,7 @@ export const chain = (
                 const { statusCode } = response;
                 const status = statusCode === 401 || statusCode === 407
                     ? badGatewayStatusCodes.AUTH_FAILED
-                    : badGatewayStatusCodes.NON_200;
+                    : (statusCode || 500);
 
                 sourceSocket.end(createCustomStatusHttpResponse(status, `UPSTREAM${statusCode}`));
             }
